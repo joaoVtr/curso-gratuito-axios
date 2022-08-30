@@ -3,9 +3,49 @@ const dataEl = document.getElementById("data");
 const headersEl = document.getElementById("headers");
 const configEl = document.getElementById("config");
 
+// axios.interceptors.request.use(
+//   function (config) {
+//     config.headers.common.tokenNew = "tokenNew";
+//     config.data = {
+//       meu_nome: "João Vitor",
+//     };
+//     console.log(config);
+//     return config;
+//   },
+//   function (error) {
+//     console.log(error);
+//     return Promise.reject(error);
+//   }
+// );
+
+const newAxios = axios.create({
+  baseURL: "https://api.example.com",
+});
+
+newAxios.defaults.headers.common["Authorization"] = "New Axios";
+
+axios.defaults.baseURL = "https://jsonplaceholder.typicode.com";
+axios.defaults.headers.common["Content-Type"] = "application/json";
+
+axios.interceptors.response.use(
+  function (response) {
+    // Status 200
+    console.log("interceptors: ", response);
+    return response;
+  },
+  function (error) {
+    // Status != 200
+    console.log("interceptors Error: ", error.response);
+
+    return Promise.reject(error);
+  }
+);
+
 const get = () => {
   axios
-    .get("https://jsonplaceholder.typicode.com/posts", {
+    // newAxios
+    // .get("https://jsonplaceholder.typicode.com/posts", {
+    .get("/posts", {
       params: {
         _limit: 5,
       },
@@ -80,14 +120,63 @@ const multiple = () => {
 };
 
 const transform = () => {
+  const config = {
+    params: {
+      _limit: 5,
+    },
+    transformResponse: [
+      function (data) {
+        const payload = JSON.parse(data).map((o) => {
+          return {
+            ...o,
+            is_selected: false,
+            first_name: "Nome",
+          };
+        });
+        return payload;
+      },
+    ],
+  };
+  axios
+    .get("https://jsonplaceholder.typicode.com/posts", config)
+    .then((response) => {
+      renderOutput(response);
+    });
+
   console.log("transform");
 };
 
 const errorHandling = () => {
+  axios
+    .get("https://jsonplaceholder.typicode.com/postsz")
+    .then((response) => {
+      renderOutput(response);
+    })
+    .catch((error) => {
+      renderOutput(error.response);
+      console.log(error.response);
+    });
   console.log("errorHandling");
 };
 
 const cancel = () => {
+  const controller = new AbortController();
+  const config = {
+    params: {
+      _limit: 5,
+    },
+    signal: controller.signal,
+  };
+  axios
+    .get("https://jsonplaceholder.typicode.com/posts", config)
+    .then((response) => {
+      renderOutput(response);
+    })
+    .catch((e) => {
+      console.log(e.message);
+      console.log(e);
+    });
+  controller.abort();
   console.log("cancel");
 };
 
